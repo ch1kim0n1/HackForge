@@ -10,9 +10,17 @@ const requiredFiles = [
   'package.json',
   'bin/forge.js',
   'src/index.js',
+  'src/stacks.js',
   'src/templates.js',
   'src/templates/frontend.js',
-  'src/templates/backend.js'
+  'src/templates/backend.js',
+  'src/templates/webextended.js',
+  'src/templates/backendextended.js',
+  'src/templates/mobile.js',
+  'src/templates/cli.js',
+  'src/templates/infrastructure.js',
+  'src/templates/datascience.js',
+  'src/templates/game.js'
 ];
 
 let allFilesExist = true;
