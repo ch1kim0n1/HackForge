@@ -1,16 +1,16 @@
-# 🔨 MindCore · Forge
+# MindCore · Forge
 
 MindCore's open source hackathon oriented software. An opinionated, deterministic, CLI-only hackathon scaffold generator used after the idea is chosen to eliminate setup churn and enforce a clean, scalable structure from minute one.
 
 ## Features
 
-✨ **CLI-First**: Simple interactive prompts to get you started  
-🎯 **Deterministic**: Same inputs always generate the same output  
-⚡ **Zero Setup Churn**: Generated projects compile and run immediately  
-🏗️ **Enforced Structure**: Clean frontend/backend separation  
-📦 **Dependencies Included**: Everything installed and ready to go  
-🚫 **No Bloat**: No Docker, no auth, no game engines, no 3rd party APIs  
-📝 **Auto-Generated Docs**: README and scripts created for you
+**CLI-First**: Simple interactive prompts to get you started  
+**Deterministic**: Same inputs always generate the same output  
+**Zero Setup Churn**: Generated projects compile and run immediately  
+**Enforced Structure**: Clean frontend/backend separation  
+**Dependencies Included**: Everything installed and ready to go  
+**No Bloat**: No Docker, no auth, no game engines, no 3rd party APIs  
+**Auto-Generated Docs**: README and scripts created for you
 
 ## Opinionated Stacks
 
