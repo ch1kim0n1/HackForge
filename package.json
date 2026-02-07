@@ -1,0 +1,28 @@
+{
+  "name": "@mindcore/forge",
+  "version": "1.0.0",
+  "description": "MindCore · Forge - CLI-first, local-only, deterministic hackathon project bootstrapper",
+  "main": "src/index.js",
+  "bin": {
+    "forge": "./bin/forge.js"
+  },
+  "scripts": {
+    "start": "node bin/forge.js",
+    "test": "node test/test.js"
+  },
+  "keywords": [
+    "hackathon",
+    "scaffolding",
+    "cli",
+    "bootstrapper"
+  ],
+  "author": "MindCore",
+  "license": "MIT",
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "inquirer": "^8.2.5"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
