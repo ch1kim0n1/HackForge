@@ -19,6 +19,8 @@ function parseArgs(args) {
       parsed.flags.skipInstall = true;
     } else if (arg === '--json') {
       parsed.flags.json = true;
+    } else if (arg === '--smart') {
+      parsed.flags.smart = true;
     } else if ((arg === '--name' || arg === '-n') && args[i + 1]) {
       parsed.name = args[++i];
     } else if ((arg === '--stack' || arg === '-s') && args[i + 1]) {
@@ -36,9 +38,11 @@ MindCore · Forge - Hackathon project bootstrapper
 
 USAGE:
   forge                                    Interactive mode (prompts)
+  forge --smart                            Smart AI Interactive mode
   forge --name <name> --stack <stack>      Non-interactive mode
 
 OPTIONS:
+  --smart                    Enable AI recommendations and enrichment
   -n, --name <name>          Project name (lowercase alphanumeric with hyphens)
   -s, --stack <stack>        Stack key (use --list-stacks to see options)
   -d, --description <desc>   Project description (default: "A hackathon project")
