@@ -83,7 +83,7 @@ function App() {
     <div className="App">
       <header className="App-header">
         <h1>🔨 ${config.projectName}</h1>
-        <p>{config.projectDescription}</p>
+        <p>${config.projectDescription}</p>
       </header>
       
       <main className="App-main">
