@@ -2,7 +2,7 @@
 
 This document shows examples of using MindCore · Forge to bootstrap hackathon projects.
 
-## Basic Usage
+## Interactive Mode (Recommended)
 
 ```bash
 # Run the forge tool
@@ -10,11 +10,40 @@ node bin/forge.js
 ```
 
 You'll be prompted for:
+
 1. Project name (e.g., `my-awesome-hackathon`)
 2. Stack choice (select from the list)
 3. Project description
 
-## Example Session
+## Non-Interactive Mode
+
+For automation, CI/CD, or when you already know what you want:
+
+```bash
+# Generate directly with all options
+forge --name crypto-tracker --stack "React + Express" --description "A cryptocurrency price tracker"
+
+# List all available stacks/templates
+forge --list-stacks
+
+# Validate configuration without creating files
+forge --name test-project --stack "Next.js" --description "Test" --dry-run
+
+# JSON output for scripting
+forge --name my-api --stack "Spring Boot" --description "REST API service" --json
+```
+
+### Non-Interactive Options
+
+- `-n, --name <name>` - Project name (lowercase, alphanumeric, hyphens only)
+- `-s, --stack <stack>` - Stack/template name (see `--list-stacks`)
+- `-d, --description <desc>` - Brief project description
+- `--list-stacks` - Display all available templates
+- `--dry-run` - Validate inputs without creating files
+- `--json` - Output as JSON (for automation)
+- `-h, --help` - Show help message
+
+## Example Session (Interactive)
 
 ```
 🔨 MindCore · Forge
@@ -84,6 +113,7 @@ This starts both frontend and backend automatically.
 ### Manual Start
 
 #### Frontend
+
 ```bash
 cd frontend
 npm install  # Already done if you used the forge installer
@@ -93,6 +123,7 @@ npm start
 Frontend runs at: http://localhost:3000
 
 #### Backend
+
 ```bash
 cd backend
 npm install  # Already done if you used the forge installer
@@ -104,21 +135,25 @@ Backend runs at: http://localhost:5000
 ## Available Stacks
 
 ### 1. React + Express
+
 - **Frontend**: React 18 with create-react-app setup
 - **Backend**: Express.js with CORS enabled
 - **Best for**: Modern single-page applications
 
 ### 2. Vue.js + Express
+
 - **Frontend**: Vue 3 with Vue CLI
 - **Backend**: Express.js with CORS enabled
 - **Best for**: Component-based SPAs with Vue
 
 ### 3. Vanilla JS + Express
+
 - **Frontend**: Pure JavaScript with http-server
 - **Backend**: Express.js with CORS enabled
 - **Best for**: Lightweight projects, learning, or when you want full control
 
 ### 4. React + FastAPI
+
 - **Frontend**: React 18 with create-react-app setup
 - **Backend**: Python FastAPI with automatic API docs
 - **Best for**: Data science, ML projects, or Python-first teams
@@ -128,6 +163,7 @@ Backend runs at: http://localhost:5000
 Every generated project includes:
 
 - `GET /api/health` - Health check endpoint
+
   ```json
   {
     "status": "healthy",
@@ -137,6 +173,7 @@ Every generated project includes:
   ```
 
 - `GET /api/data` - Sample data endpoint
+
   ```json
   {
     "message": "Hello from your-project API!",
@@ -169,6 +206,7 @@ After generation, customize your project:
 ## Troubleshooting
 
 ### Port already in use
+
 ```bash
 # Kill processes on port 3000 or 5000
 kill $(lsof -ti:3000)
@@ -176,6 +214,7 @@ kill $(lsof -ti:5000)
 ```
 
 ### Dependencies not installing
+
 ```bash
 # Clear npm cache and reinstall
 cd frontend  # or backend
@@ -184,6 +223,7 @@ npm install
 ```
 
 ### Backend not connecting to frontend
+
 - Check that CORS is enabled (it is by default)
 - Verify the backend URL in your frontend code
 - Make sure both servers are running
@@ -191,18 +231,21 @@ npm install
 ## Advanced: Adding Features
 
 ### Database Integration
+
 ```bash
 # In backend directory
 npm install sqlite3  # or mongoose, pg, etc.
 ```
 
 ### State Management (React)
+
 ```bash
 # In frontend directory
 npm install redux react-redux  # or zustand, jotai, etc.
 ```
 
 ### UI Components
+
 ```bash
 # In frontend directory
 npm install @mui/material  # or ant-design, chakra-ui, etc.

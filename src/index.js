@@ -12,30 +12,43 @@ class MindCoreForge {
     this.config = null;
   }
 
-  async run() {
-    console.log(chalk.cyan.bold('\n🔨 MindCore · Forge'));
-    console.log(chalk.gray('Hackathon project bootstrapper\n'));
+  async run(flags = {}) {
+    try {
+      console.log(chalk.cyan.bold('\n🔨 MindCore · Forge'));
+      console.log(chalk.gray('Hackathon project bootstrapper\n'));
 
-    // Get project configuration
-    this.config = await this.getConfiguration();
+      // Get project configuration
+      this.config = await this.getConfiguration();
+      
+      // Apply flags
+      if (flags.skipInstall) {
+        this.config.skipInstall = true;
+      }
 
-    // Validate configuration
-    this.validateConfig();
+      // Validate configuration
+      this.validateConfig();
 
-    // Create project structure based on type
-    await this.createProjectStructure();
+      // Create project structure based on type
+      await this.createProjectStructure();
 
-    // Generate project based on type
-    await this.generateProject();
+      // Generate project based on type
+      await this.generateProject();
 
-    // Generate root files
-    await this.generateRootFiles();
+      // Generate root files
+      await this.generateRootFiles();
 
-    // Install dependencies
-    await this.installDependencies();
+      // Install dependencies
+      await this.installDependencies();
 
-    // Final message
-    this.printSuccessMessage();
+      // Final message
+      this.printSuccessMessage();
+    } catch (error) {
+      console.error(chalk.red('\n❌ Error:'), error.message || error);
+      if (process.env.DEBUG) {
+        console.error(error.stack);
+      }
+      process.exit(1);
+    }
   }
 
   async getConfiguration() {
@@ -322,14 +335,138 @@ class MindCoreForge {
       fs.writeFileSync(gitignorePath, gitignore);
     }
 
-    // Generate run script for web projects
+    // Generate root package.json with concurrently for web projects with separate frontend/backend
+    if (type === 'web' && !this.config.framework) {
+      const rootPackageJson = {
+        name: this.config.projectName,
+        version: "1.0.0",
+        description: this.config.projectDescription,
+        scripts: {},
+        devDependencies: {
+          "concurrently": "^8.2.2"
+        }
+      };
+
+      const hasFrontend = fs.existsSync(path.join(this.projectPath, 'frontend'));
+      const hasBackend = fs.existsSync(path.join(this.projectPath, 'backend'));
+
+      if (hasFrontend && hasBackend) {
+        let backendStart = "npm start";
+        let backendDev = "npm run dev";
+        
+        const bType = this.config.backend;
+        if (bType === 'fastapi' || bType === 'flask') {
+          backendStart = "python src/main.py";
+          backendDev = backendStart;
+        } else if (bType === 'go-gin') {
+          backendStart = "go run main.go";
+          backendDev = backendStart;
+        } else if (bType === 'spring-boot') {
+          backendStart = "./mvnw spring-boot:run";
+          backendDev = backendStart;
+        }
+
+        rootPackageJson.scripts.start = "concurrently \"npm:start:*\" --names \"backend,frontend\" --prefix-colors \"blue,magenta\"";
+        rootPackageJson.scripts["start:backend"] = `cd backend && ${backendStart}`;
+        rootPackageJson.scripts["start:frontend"] = "cd frontend && npm start";
+        
+        rootPackageJson.scripts.dev = "concurrently \"npm:dev:*\" --names \"backend,frontend\" --prefix-colors \"blue,magenta\"";
+        rootPackageJson.scripts["dev:backend"] = `cd backend && ${backendDev}`;
+        rootPackageJson.scripts["dev:frontend"] = "cd frontend && npm run dev";
+      } else if (hasFrontend) {
+        rootPackageJson.scripts.start = "cd frontend && npm start";
+        rootPackageJson.scripts.dev = "cd frontend && npm run dev";
+      } else if (hasBackend) {
+        rootPackageJson.scripts.start = "cd backend && npm start";
+        rootPackageJson.scripts.dev = "cd backend && npm run dev";
+      }
+
+      fs.writeFileSync(
+        path.join(this.projectPath, 'package.json'),
+        JSON.stringify(rootPackageJson, null, 2)
+      );
+    }
+
+    // Generate run script for web projects (Unix only, skip on Windows)
     if (type === 'web' && !this.config.framework) {
       const runScript = this.generateRunScript();
       fs.writeFileSync(path.join(this.projectPath, 'run.sh'), runScript);
-      fs.chmodSync(path.join(this.projectPath, 'run.sh'), '755');
+      if (process.platform !== 'win32') {
+        try { fs.chmodSync(path.join(this.projectPath, 'run.sh'), '755'); } catch (e) { /* ignore on Windows */ }
+      }
     }
 
+    // Generate Docker Compose if both frontend and backend exist
+    if (type === 'web' && !this.config.framework) {
+      this.generateDockerCompose();
+    }
+
+    // Generate CI workflow
+    this.generateGitHubCI();
+
     console.log(chalk.green('✓ Root files generated'));
+  }
+
+  generateDockerCompose() {
+    console.log(chalk.yellow('🐳 Generating Docker Compose...'));
+    const compose = `version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "${this.config.backend === 'fastapi' ? '8000:8000' : '5000:5000'}"
+    environment:
+      - DATABASE_URL=sqlite:///./data.db
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - /app/__pycache__
+      - /app/venv
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+`;
+    fs.writeFileSync(path.join(this.projectPath, 'docker-compose.yml'), compose);
+  }
+
+  generateGitHubCI() {
+     const ci = `name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        
+    - name: Install Dependencies
+      run: |
+        if [ -f package.json ]; then npm install; fi
+        if [ -d frontend ]; then cd frontend && npm install; fi
+        if [ -d backend ] && [ -f backend/package.json ]; then cd backend && npm install; fi
+
+    - name: Build
+      run: |
+        if [ -d frontend ]; then cd frontend && npm run build --if-present; fi
+`;
+    const workflowDir = path.join(this.projectPath, '.github', 'workflows');
+    fs.mkdirSync(workflowDir, { recursive: true });
+    fs.writeFileSync(path.join(workflowDir, 'ci.yml'), ci);
   }
 
   generateGitignore() {
@@ -573,6 +710,12 @@ wait
   }
 
   async installDependencies() {
+    if (this.config.skipInstall) {
+      console.log(chalk.yellow('\n⚠ Skipping dependency installation (--skip-install used)'));
+      console.log(chalk.gray('  You will need to run dependency installation commands manually later.\n'));
+      return;
+    }
+
     console.log(chalk.yellow('📦 Installing dependencies...'));
     console.log(chalk.gray('This may take a few minutes...\n'));
 
@@ -611,7 +754,7 @@ wait
       console.log(chalk.cyan('\nInstalling backend dependencies (Python)...'));
       
       // Create virtual environment
-      execSync('python3 -m venv venv', {
+      execSync(process.platform === 'win32' ? 'python -m venv venv' : 'python3 -m venv venv', {
         cwd: backendPath,
         stdio: 'inherit'
       });
@@ -657,7 +800,7 @@ wait
 
     if (fs.existsSync(reqPath)) {
       console.log(chalk.cyan('Installing Python dependencies...'));
-      execSync('python3 -m venv venv', {
+      execSync(process.platform === 'win32' ? 'python -m venv venv' : 'python3 -m venv venv', {
         cwd: this.projectPath,
         stdio: 'inherit'
       });
@@ -706,7 +849,8 @@ wait
     
     const { type } = this.config;
     if (type === 'web' && !this.config.framework) {
-      console.log(chalk.white('  2. ./run.sh'));
+      console.log(chalk.white('  2. npm start'));
+      console.log(chalk.gray('     (or ./run.sh on Linux/macOS)'));
     } else {
       console.log(chalk.white('  2. Check README.md for instructions'));
     }
@@ -718,8 +862,110 @@ wait
 }
 
 module.exports = {
-  run: async () => {
+  run: async (flags) => {
     const forge = new MindCoreForge();
-    await forge.run();
-  }
+    await forge.run(flags);
+  },
+
+  generate: async (options) => {
+    const { projectName, stack: stackKey, projectDescription, dryRun, skipInstall, jsonOutput } = options;
+
+    // Validate project name
+    if (!/^[a-z0-9-]+$/.test(projectName)) {
+      throw new Error('Project name must be lowercase alphanumeric with hyphens only');
+    }
+    // Security: Prevent path traversal
+    if (projectName.includes('..') || projectName.includes('/') || projectName.includes('\\')) {
+      throw new Error('Project name cannot contain paths or forbidden characters');
+    }
+
+    // Validate stack exists
+    const stackConfig = STACKS[stackKey];
+    if (!stackConfig) {
+      const available = Object.keys(STACKS).join(', ');
+      throw new Error(`Unknown stack: "${stackKey}". Available stacks: ${available}`);
+    }
+
+    const config = {
+      projectName,
+      projectDescription: projectDescription || 'A hackathon project',
+      stack: stackKey,
+      skipInstall,
+      ...stackConfig
+    };
+
+    if (dryRun) {
+      const result = {
+        projectName,
+        stack: stackKey,
+        stackName: stackConfig.name,
+        type: stackConfig.type,
+        category: stackConfig.category,
+        description: projectDescription,
+        directory: path.resolve(process.cwd(), projectName),
+      };
+
+      if (jsonOutput) {
+        console.log(JSON.stringify(result, null, 2));
+      } else {
+        console.log(chalk.cyan.bold('\n🔨 MindCore · Forge (dry run)'));
+        console.log(chalk.gray('No files will be created.\n'));
+        console.log(chalk.white(`  Project:     ${projectName}`));
+        console.log(chalk.white(`  Stack:       ${stackConfig.name}`));
+        console.log(chalk.white(`  Type:        ${stackConfig.type}`));
+        console.log(chalk.white(`  Category:    ${stackConfig.category}`));
+        console.log(chalk.white(`  Directory:   ${result.directory}`));
+      }
+      return result;
+    }
+
+    const forge = new MindCoreForge();
+    forge.config = config;
+
+    if (!jsonOutput) {
+      console.log(chalk.cyan.bold('\n🔨 MindCore · Forge'));
+      console.log(chalk.gray('Hackathon project bootstrapper\n'));
+    }
+
+    forge.validateConfig();
+    await forge.createProjectStructure();
+    await forge.generateProject();
+    await forge.generateRootFiles();
+    await forge.installDependencies();
+
+    const result = {
+      projectName,
+      stack: stackKey,
+      stackName: stackConfig.name,
+      type: stackConfig.type,
+      category: stackConfig.category,
+      directory: forge.projectPath,
+    };
+
+    if (jsonOutput) {
+      console.log(JSON.stringify(result, null, 2));
+    } else {
+      forge.printSuccessMessage();
+    }
+
+    return result;
+  },
+
+  listStacks: () => {
+    const grouped = {};
+    Object.entries(STACKS).forEach(([key, stack]) => {
+      const category = stack.category || 'Other';
+      if (!grouped[category]) {
+        grouped[category] = {};
+      }
+      grouped[category][key] = {
+        name: stack.name,
+        description: stack.description,
+        type: stack.type,
+      };
+    });
+    return grouped;
+  },
+
+  MindCoreForge
 };

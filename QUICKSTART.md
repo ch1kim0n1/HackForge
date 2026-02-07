@@ -12,19 +12,33 @@ npm install
 
 ## Create Your First Project
 
+### Interactive Mode
+
 ```bash
 # Run the forge tool
 node bin/forge.js
 ```
 
 Answer the prompts:
+
 - **Project name**: `my-first-project` (lowercase with hyphens)
 - **Stack**: Choose any (React + Express recommended)
 - **Description**: Brief description of your project
 
+### Non-Interactive Mode (Faster!)
+
+```bash
+# Generate directly without prompts
+node bin/forge.js --name my-first-project --stack "React + Express" --description "My first hackathon app"
+
+# See all available stacks
+node bin/forge.js --list-stacks
+```
+
 ## What Happens Next
 
 MindCore · Forge will:
+
 1. ✅ Validate your configuration
 2. ✅ Create project structure
 3. ✅ Generate frontend code
@@ -42,6 +56,7 @@ cd my-first-project
 ```
 
 Open your browser:
+
 - Frontend: http://localhost:3000
 - Backend: http://localhost:5000 (or 8000 for FastAPI)
 
@@ -50,6 +65,7 @@ You should see a working app with API integration!
 ## What You Get
 
 Your project includes:
+
 - ✅ Working frontend with beautiful UI
 - ✅ Working backend with REST API
 - ✅ Health check endpoint
@@ -70,33 +86,41 @@ Your project includes:
 Choose based on your preferences:
 
 ### React + Express (Recommended)
+
 - Modern, popular, lots of resources
 - Great for full-featured web apps
 
 ### Vue.js + Express
+
 - Similar to React, simpler syntax
 - Great if you prefer Vue
 
 ### Vanilla JS + Express
+
 - Pure JavaScript, no framework
 - Lightweight, full control
 
 ### React + FastAPI
+
 - Python backend with automatic API docs
 - Great for data/ML projects
 
 ## Common Tasks
 
 ### Add a new API endpoint
+
 Edit `backend/src/index.js`:
+
 ```javascript
-app.get('/api/myendpoint', (req, res) => {
-  res.json({ message: 'My data' });
+app.get("/api/myendpoint", (req, res) => {
+  res.json({ message: "My data" });
 });
 ```
 
 ### Add a new frontend component
+
 Create `frontend/src/MyComponent.js`:
+
 ```javascript
 function MyComponent() {
   return <div>My Component</div>;
@@ -105,6 +129,7 @@ export default MyComponent;
 ```
 
 ### Install a new package
+
 ```bash
 cd frontend  # or backend
 npm install package-name
@@ -113,12 +138,14 @@ npm install package-name
 ## Troubleshooting
 
 **Port in use?**
+
 ```bash
 kill $(lsof -ti:3000)  # Frontend
 kill $(lsof -ti:5000)  # Backend
 ```
 
 **Need to reinstall?**
+
 ```bash
 cd frontend  # or backend
 rm -rf node_modules

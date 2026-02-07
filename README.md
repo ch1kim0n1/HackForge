@@ -15,8 +15,9 @@ MindCore's open source hackathon oriented software. A comprehensive, determinist
 ## Supported Templates (30+)
 
 ### Web Full-Stack (10)
+
 - **React + Express** - Modern React SPA with Express REST API
-- **Vue.js + Express** - Vue.js SPA with Express REST API  
+- **Vue.js + Express** - Vue.js SPA with Express REST API
 - **Angular + Express** - Angular SPA with Express REST API
 - **Svelte + Express** - Svelte SPA with Express REST API
 - **Vanilla JS + Express** - Pure JavaScript with Express REST API
@@ -27,33 +28,39 @@ MindCore's open source hackathon oriented software. A comprehensive, determinist
 - **React + Go/Gin** - React SPA with Go Gin backend
 
 ### Mobile Applications (4)
+
 - **React Native** - Cross-platform mobile with Expo
 - **Flutter** - Cross-platform mobile with Dart
 - **Swift iOS** - Native iOS with SwiftUI
 - **Kotlin Android** - Native Android with Jetpack Compose
 
 ### CLI & Desktop (4)
+
 - **Go CLI** - Command-line tool with Cobra
 - **Python CLI** - Command-line tool with Click
 - **Rust CLI** - Fast CLI tool with Clap
 - **Electron** - Cross-platform desktop app
 
 ### Infrastructure/DevOps (4)
+
 - **Terraform + AWS** - Infrastructure as code for AWS
 - **Kubernetes** - Container orchestration manifests
 - **Docker Compose** - Multi-container application stack
 - **Ansible** - Configuration management playbooks
 
 ### Data Science/ML (3)
+
 - **Python + Jupyter** - Data science notebooks
 - **Python + PyTorch** - Machine learning with PyTorch
 - **Python + TensorFlow** - Machine learning with TensorFlow/Keras
 
 ### Game Development (2)
+
 - **Pygame** - 2D games in Python
 - **Phaser.js** - Browser-based games
 
 ### Backend APIs (3)
+
 - **Spring Boot** - Java REST API
 - **Ruby on Rails API** - Rails API-only backend
 - **Phoenix** - Elixir Phoenix REST API
@@ -71,6 +78,8 @@ npm install
 
 ## Usage
 
+### Interactive Mode (Recommended)
+
 ```bash
 # Run the forge tool
 node bin/forge.js
@@ -81,15 +90,45 @@ forge
 ```
 
 The tool will prompt you for:
+
 1. **Project name** - lowercase alphanumeric with hyphens only
 2. **Stack/Template choice** - select from 30+ templates organized by category
 3. **Project description** - brief description of your hackathon project
+
+### Non-Interactive Mode
+
+Skip prompts and generate directly:
+
+```bash
+# Generate with all options specified
+forge --name my-app --stack "React + Express" --description "A real-time chat app"
+
+# List all available stacks
+forge --list-stacks
+
+# Dry run (validate without creating files)
+forge --name test-app --stack "Vue.js + Express" --description "Test" --dry-run
+
+# JSON output (for automation)
+forge --name api-service --stack "Spring Boot" --description "REST API" --json
+```
+
+**Non-interactive options:**
+
+- `-n, --name <name>` - Project name (lowercase alphanumeric with hyphens)
+- `-s, --stack <stack>` - Stack/template name (use `--list-stacks` to see all)
+- `-d, --description <desc>` - Project description
+- `--list-stacks` - Show all available templates
+- `--dry-run` - Validate configuration without creating files
+- `--json` - Output progress as JSON (useful for CI/CD)
+- `-h, --help` - Show help message
 
 ## What Gets Generated
 
 The structure varies by project type:
 
 ### Web Projects (with frontend/backend)
+
 ```
 your-project/
 ├── frontend/          # Frontend application
@@ -105,6 +144,7 @@ your-project/
 ```
 
 ### Other Project Types
+
 Mobile, CLI, infrastructure, data science, and game projects get a single-root structure optimized for that project type with all necessary configuration files, skeleton code, and dependencies.
 
 ## Generated Project Features
@@ -158,9 +198,11 @@ npm test
 ## Requirements
 
 **For the forge tool:**
+
 - Node.js 14+ (with npm)
 
 **For generated projects (depends on template):**
+
 - Node.js 14+ (web, mobile, CLI, games)
 - Python 3.8+ (FastAPI, Flask, Django, ML, data science)
 - Go 1.21+ (Go CLI, Go backend)
@@ -185,6 +227,7 @@ npm test
 ## What MindCore · Forge Focuses On
 
 **Included:**
+
 - ✅ Diverse project templates (30+)
 - ✅ Multi-language support (20+)
 - ✅ Working skeleton code
@@ -193,6 +236,7 @@ npm test
 - ✅ Documentation generation
 
 **Intentionally Excluded** (add as needed for your hackathon):
+
 - ❌ Authentication/authorization scaffolding
 - ❌ Database schemas and migrations
 - ❌ Cloud deployment configurations
