@@ -443,7 +443,7 @@ ${this.config.backend === 'fastapi' || this.config.backend === 'flask' || this.c
   ? `python -m venv venv
 source venv/bin/activate  # On Windows: venv\\Scripts\\activate
 pip install -r requirements.txt
-python ${this.config.backend === 'django' ? 'manage.py runserver 5000' : 'app.py' || this.config.backend === 'flask' ? 'app.py' : 'src/main.py'}`
+python ${this.config.backend === 'django' ? 'manage.py runserver 5000' : (this.config.backend === 'flask' ? 'app.py' : 'src/main.py')}`
   : this.config.backend === 'go-gin'
   ? `go mod download
 go run main.go`
