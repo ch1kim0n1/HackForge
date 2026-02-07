@@ -3,6 +3,10 @@
 # Demo script showing MindCore · Forge in action
 # This creates a sample project to demonstrate the tool
 
+# Get the directory of this script
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+export FORGE_DIR="$SCRIPT_DIR"
+
 echo "🔨 MindCore · Forge Demo"
 echo "========================"
 echo ""
@@ -26,9 +30,12 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-// Load templates directly
-const frontendTemplates = require('/home/runner/work/HackForge/HackForge/src/templates/frontend.js');
-const backendTemplates = require('/home/runner/work/HackForge/HackForge/src/templates/backend.js');
+// Dynamically resolve the forge directory
+const forgeDir = process.env.FORGE_DIR || path.join(__dirname, '..', '..');
+
+// Load templates using resolved path
+const frontendTemplates = require(path.join(forgeDir, 'src/templates/frontend.js'));
+const backendTemplates = require(path.join(forgeDir, 'src/templates/backend.js'));
 
 const config = {
   projectName: 'demo-hackathon-project',

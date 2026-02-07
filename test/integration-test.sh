@@ -5,7 +5,9 @@
 
 set -e
 
-FORGE_DIR="/home/runner/work/HackForge/HackForge"
+# Get the directory of this script and set paths relative to it
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+FORGE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 TEST_DIR="/tmp/forge-integration-test"
 
 echo "🧪 MindCore · Forge Integration Test"
@@ -25,8 +27,8 @@ echo "Test 1: Generating React + Express project..."
 echo ""
 
 # We'll use a non-interactive approach by creating a test script
-cat > "$TEST_DIR/test-generate.js" << 'EOF'
-const MindCoreForge = require('/home/runner/work/HackForge/HackForge/src/index.js');
+cat > "$TEST_DIR/test-generate.js" << EOF
+const MindCoreForge = require('$FORGE_DIR/src/index.js');
 const fs = require('fs');
 const path = require('path');
 

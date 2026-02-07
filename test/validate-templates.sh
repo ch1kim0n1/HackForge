@@ -6,7 +6,10 @@ echo "🧪 MindCore · Forge Template Validation"
 echo "========================================"
 echo ""
 
-cd /home/runner/work/HackForge/HackForge
+# Get the directory of this script and move to project root
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+cd "$PROJECT_ROOT"
 
 # Create a test validation script
 node << 'NODESCRIPT'
