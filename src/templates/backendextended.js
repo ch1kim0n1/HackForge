@@ -1,18 +1,24 @@
-// Extended backend framework templates
+// Extended backend framework templates with a unified API contract.
 
 function flask(config) {
   return {
     requirements: `Flask==3.0.0
 Flask-CORS==4.0.0`,
     files: {
-      'app.py': `from flask import Flask, jsonify
+      'app.py': `from flask import Flask, jsonify, request
 from flask_cors import CORS
 from datetime import datetime
 
 app = Flask(__name__)
 CORS(app)
 
-@app.route('/api/health')
+items = [
+    {'id': 1, 'name': 'Sample Item 1', 'value': 42},
+    {'id': 2, 'name': 'Sample Item 2', 'value': 84}
+]
+next_id = 3
+
+@app.route('/api/health', methods=['GET'])
 def health():
     return jsonify({
         'status': 'healthy',
@@ -20,24 +26,62 @@ def health():
         'service': '${config.projectName}-backend'
     })
 
-@app.route('/api/data')
-def get_data():
+@app.route('/api/items', methods=['GET'])
+def list_items():
     return jsonify({
         'message': 'Hello from ${config.projectName} API!',
         'description': '${config.projectDescription}',
         'timestamp': datetime.now().isoformat(),
-        'data': [
-            {'id': 1, 'name': 'Sample Item 1', 'value': 42},
-            {'id': 2, 'name': 'Sample Item 2', 'value': 84},
-            {'id': 3, 'name': 'Sample Item 3', 'value': 126}
-        ]
+        'data': items
     })
 
+@app.route('/api/items', methods=['POST'])
+def create_item():
+    global next_id
+    payload = request.get_json(silent=True) or {}
+
+    if 'name' not in payload or 'value' not in payload:
+      return jsonify({'error': 'Missing required fields: name and value'}), 400
+
+    item = {
+        'id': next_id,
+        'name': payload['name'],
+        'value': payload['value']
+    }
+
+    next_id += 1
+    items.insert(0, item)
+    return jsonify({'message': 'Item created successfully', 'data': item}), 201
+
+@app.route('/api/items/<int:item_id>', methods=['PUT'])
+def update_item(item_id):
+    payload = request.get_json(silent=True) or {}
+
+    for item in items:
+        if item['id'] == item_id:
+            if 'name' in payload:
+                item['name'] = payload['name']
+            if 'value' in payload:
+                item['value'] = payload['value']
+            return jsonify({'message': 'Item updated successfully', 'data': item})
+
+    return jsonify({'error': 'Not found', 'message': f'Item with id {item_id} not found'}), 404
+
+@app.route('/api/items/<int:item_id>', methods=['DELETE'])
+def delete_item(item_id):
+    for index, item in enumerate(items):
+        if item['id'] == item_id:
+            deleted = items.pop(index)
+            return jsonify({'message': 'Item deleted successfully', 'data': deleted})
+
+    return jsonify({'error': 'Not found', 'message': f'Item with id {item_id} not found'}), 404
+
 if __name__ == '__main__':
-    print("🚀 Flask backend starting...")
-    print("📍 Health check: http://localhost:5000/api/health")
-    print("📍 Data endpoint: http://localhost:5000/api/data")
-    app.run(host='0.0.0.0', port=5000, debug=True)`,
+    print('Flask backend starting...')
+    print('Health check: http://localhost:5000/api/health')
+    print('Items endpoint: http://localhost:5000/api/items')
+    app.run(host='0.0.0.0', port=5000, debug=True)
+`,
       'README.md': `# ${config.projectName} Backend
 
 ${config.projectDescription}
@@ -76,18 +120,14 @@ django-cors-headers==4.3.0`,
 import os
 import sys
 
-if __name__ == "__main__":
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
-    try:
-        from django.core.management import execute_from_command_line
-    except ImportError:
-        raise ImportError("Couldn't import Django.")
-    execute_from_command_line(sys.argv)`,
-      'config/settings.py': `import os
-from pathlib import Path
+if __name__ == '__main__':
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+    from django.core.management import execute_from_command_line
+    execute_from_command_line(sys.argv)
+`,
+      'config/settings.py': `from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-
 SECRET_KEY = 'django-insecure-change-this-in-production'
 DEBUG = True
 ALLOWED_HOSTS = ['*']
@@ -106,9 +146,7 @@ MIDDLEWARE = [
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True
-
 ROOT_URLCONF = 'config.urls'
-
 WSGI_APPLICATION = 'config.wsgi.application'
 
 DATABASES = {
@@ -118,15 +156,30 @@ DATABASES = {
     }
 }
 
-STATIC_URL = '/static/'`,
-      'config/urls.py': `from django.urls import path, include
+STATIC_URL = '/static/'
+`,
+      'config/urls.py': `from django.urls import include, path
 
 urlpatterns = [
     path('api/', include('api.urls')),
-]`,
-      'api/views.py': `from rest_framework.decorators import api_view
+]
+`,
+      'api/views.py': `from datetime import datetime
+from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from datetime import datetime
+
+items = [
+    {'id': 1, 'name': 'Sample Item 1', 'value': 42},
+    {'id': 2, 'name': 'Sample Item 2', 'value': 84},
+]
+
+
+def find_item(item_id):
+    for item in items:
+        if item['id'] == item_id:
+            return item
+    return None
+
 
 @api_view(['GET'])
 def health(request):
@@ -136,24 +189,53 @@ def health(request):
         'service': '${config.projectName}-backend'
     })
 
-@api_view(['GET'])
-def get_data(request):
-    return Response({
-        'message': 'Hello from ${config.projectName} API!',
-        'description': '${config.projectDescription}',
-        'timestamp': datetime.now().isoformat(),
-        'data': [
-            {'id': 1, 'name': 'Sample Item 1', 'value': 42},
-            {'id': 2, 'name': 'Sample Item 2', 'value': 84}
-        ]
-    })`,
+
+@api_view(['GET', 'POST'])
+def items_collection(request):
+    if request.method == 'GET':
+        return Response({
+            'message': 'Hello from ${config.projectName} API!',
+            'description': '${config.projectDescription}',
+            'timestamp': datetime.now().isoformat(),
+            'data': items
+        })
+
+    payload = request.data or {}
+    if 'name' not in payload or 'value' not in payload:
+        return Response({'error': 'Missing required fields: name and value'}, status=400)
+
+    next_id = max([item['id'] for item in items], default=0) + 1
+    item = {'id': next_id, 'name': payload['name'], 'value': payload['value']}
+    items.insert(0, item)
+    return Response({'message': 'Item created successfully', 'data': item}, status=201)
+
+
+@api_view(['PUT', 'DELETE'])
+def item_resource(request, item_id):
+    item = find_item(item_id)
+    if item is None:
+        return Response({'error': 'Not found', 'message': f'Item with id {item_id} not found'}, status=404)
+
+    if request.method == 'PUT':
+        payload = request.data or {}
+        if 'name' in payload:
+            item['name'] = payload['name']
+        if 'value' in payload:
+            item['value'] = payload['value']
+        return Response({'message': 'Item updated successfully', 'data': item})
+
+    items.remove(item)
+    return Response({'message': 'Item deleted successfully', 'data': item})
+`,
       'api/urls.py': `from django.urls import path
 from . import views
 
 urlpatterns = [
     path('health', views.health),
-    path('data', views.get_data),
-]`,
+    path('items', views.items_collection),
+    path('items/<int:item_id>', views.item_resource),
+]
+`,
       'README.md': `# ${config.projectName} Backend
 
 ${config.projectDescription}
@@ -184,73 +266,111 @@ function goGin(config) {
 
 go 1.21
 
-require github.com/gin-gonic/gin v1.9.1
-
 require (
-\tgithub.com/gin-contrib/cors v1.5.0
-)`,
+	github.com/gin-contrib/cors v1.5.0
+	github.com/gin-gonic/gin v1.9.1
+)
+`,
       'main.go': `package main
 
 import (
-\t"net/http"
-\t"time"
+	"net/http"
+	"strconv"
+	"time"
 
-\t"github.com/gin-contrib/cors"
-\t"github.com/gin-gonic/gin"
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
 )
 
-type HealthResponse struct {
-\tStatus    string \`json:"status"\`
-\tTimestamp string \`json:"timestamp"\`
-\tService   string \`json:"service"\`
+type Item struct {
+	ID    int    \`json:"id"\`
+	Name  string \`json:"name"\`
+	Value int    \`json:"value"\`
 }
 
-type DataItem struct {
-\tID    int    \`json:"id"\`
-\tName  string \`json:"name"\`
-\tValue int    \`json:"value"\`
-}
-
-type DataResponse struct {
-\tMessage     string     \`json:"message"\`
-\tDescription string     \`json:"description"\`
-\tTimestamp   string     \`json:"timestamp"\`
-\tData        []DataItem \`json:"data"\`
+var items = []Item{
+	{ID: 1, Name: "Sample Item 1", Value: 42},
+	{ID: 2, Name: "Sample Item 2", Value: 84},
 }
 
 func main() {
-\trouter := gin.Default()
+	router := gin.Default()
+	router.Use(cors.Default())
 
-\t// CORS middleware
-\trouter.Use(cors.Default())
+	router.GET("/api/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"status": "healthy",
+			"timestamp": time.Now().Format(time.RFC3339),
+			"service": "${config.projectName}-backend",
+		})
+	})
 
-\t// Health check endpoint
-\trouter.GET("/api/health", func(c *gin.Context) {
-\t\tc.JSON(http.StatusOK, HealthResponse{
-\t\t\tStatus:    "healthy",
-\t\t\tTimestamp: time.Now().Format(time.RFC3339),
-\t\t\tService:   "${config.projectName}-backend",
-\t\t})
-\t})
+	router.GET("/api/items", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"message": "Hello from ${config.projectName} API!",
+			"description": "${config.projectDescription}",
+			"timestamp": time.Now().Format(time.RFC3339),
+			"data": items,
+		})
+	})
 
-\t// Data endpoint
-\trouter.GET("/api/data", func(c *gin.Context) {
-\t\tc.JSON(http.StatusOK, DataResponse{
-\t\t\tMessage:     "Hello from ${config.projectName} API!",
-\t\t\tDescription: "${config.projectDescription}",
-\t\t\tTimestamp:   time.Now().Format(time.RFC3339),
-\t\t\tData: []DataItem{
-\t\t\t\t{ID: 1, Name: "Sample Item 1", Value: 42},
-\t\t\t\t{ID: 2, Name: "Sample Item 2", Value: 84},
-\t\t\t},
-\t\t})
-\t})
+	router.POST("/api/items", func(c *gin.Context) {
+		var payload Item
+		if err := c.BindJSON(&payload); err != nil || payload.Name == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Missing required fields: name and value"})
+			return
+		}
 
-\tprintln("🚀 Go Gin backend starting...")
-\tprintln("📍 Health check: http://localhost:5000/api/health")
-\tprintln("📍 Data endpoint: http://localhost:5000/api/data")
-\trouter.Run(":5000")
-}`,
+		nextID := 1
+		if len(items) > 0 {
+			nextID = items[0].ID + 1
+		}
+
+		item := Item{ID: nextID, Name: payload.Name, Value: payload.Value}
+		items = append([]Item{item}, items...)
+		c.JSON(http.StatusCreated, gin.H{"message": "Item created successfully", "data": item})
+	})
+
+	router.PUT("/api/items/:id", func(c *gin.Context) {
+		id, _ := strconv.Atoi(c.Param("id"))
+		var payload Item
+		if err := c.BindJSON(&payload); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON payload"})
+			return
+		}
+
+		for i := range items {
+			if items[i].ID == id {
+				if payload.Name != "" {
+					items[i].Name = payload.Name
+				}
+				if payload.Value != 0 {
+					items[i].Value = payload.Value
+				}
+				c.JSON(http.StatusOK, gin.H{"message": "Item updated successfully", "data": items[i]})
+				return
+			}
+		}
+
+		c.JSON(http.StatusNotFound, gin.H{"error": "Not found"})
+	})
+
+	router.DELETE("/api/items/:id", func(c *gin.Context) {
+		id, _ := strconv.Atoi(c.Param("id"))
+		for i := range items {
+			if items[i].ID == id {
+				deleted := items[i]
+				items = append(items[:i], items[i+1:]...)
+				c.JSON(http.StatusOK, gin.H{"message": "Item deleted successfully", "data": deleted})
+				return
+			}
+		}
+		c.JSON(http.StatusNotFound, gin.H{"error": "Not found"})
+	})
+
+	router.Run(":5000")
+}
+`,
       'README.md': `# ${config.projectName} Backend
 
 ${config.projectDescription}
@@ -271,64 +391,64 @@ Backend runs at http://localhost:5000
 `,
       '.gitignore': `# Binaries
 *.exe
-*.exe~
 *.dll
 *.so
 *.dylib
 
 # Go workspace
-go.work`
+go.work
+`
     }
   };
 }
 
 function springBoot(config) {
   const packageName = config.projectName.replace(/-/g, '');
-  
+
   return {
     files: {
       'pom.xml': `<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
-         https://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-    <parent>
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>3.2.0</version>
+  </parent>
+
+  <groupId>com.${packageName}</groupId>
+  <artifactId>${config.projectName}</artifactId>
+  <version>1.0.0</version>
+
+  <properties>
+    <java.version>17</java.version>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
         <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.2.0</version>
-    </parent>
-    <groupId>com.${packageName}</groupId>
-    <artifactId>${config.projectName}</artifactId>
-    <version>1.0.0</version>
-    <name>${config.projectName}</name>
-    <description>${config.projectDescription}</description>
-
-    <properties>
-        <java.version>17</java.version>
-    </properties>
-
-    <dependencies>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-        </dependency>
-    </dependencies>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-            </plugin>
-        </plugins>
-    </build>
-</project>`,
+        <artifactId>spring-boot-maven-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
+</project>
+`,
       'src/main/java/com/Application.java': `package com.${packageName};
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.web.bind.annotation.*;
+
 import java.time.Instant;
 import java.util.*;
 
@@ -337,47 +457,89 @@ import java.util.*;
 @CrossOrigin(origins = "*")
 @RequestMapping("/api")
 public class Application {
+  private final List<Map<String, Object>> items = new ArrayList<>();
 
-    public static void main(String[] args) {
-        SpringApplication.run(Application.class, args);
-        System.out.println("🚀 Spring Boot backend starting...");
-        System.out.println("📍 Health check: http://localhost:5000/api/health");
-        System.out.println("📍 Data endpoint: http://localhost:5000/api/data");
+  public Application() {
+    items.add(new HashMap<>(Map.of("id", 1, "name", "Sample Item 1", "value", 42)));
+    items.add(new HashMap<>(Map.of("id", 2, "name", "Sample Item 2", "value", 84)));
+  }
+
+  public static void main(String[] args) {
+    SpringApplication.run(Application.class, args);
+  }
+
+  @GetMapping("/health")
+  public Map<String, String> health() {
+    Map<String, String> response = new HashMap<>();
+    response.put("status", "healthy");
+    response.put("timestamp", Instant.now().toString());
+    response.put("service", "${config.projectName}-backend");
+    return response;
+  }
+
+  @GetMapping("/items")
+  public Map<String, Object> listItems() {
+    Map<String, Object> response = new HashMap<>();
+    response.put("message", "Hello from ${config.projectName} API!");
+    response.put("description", "${config.projectDescription}");
+    response.put("timestamp", Instant.now().toString());
+    response.put("data", items);
+    return response;
+  }
+
+  @PostMapping("/items")
+  public Map<String, Object> createItem(@RequestBody Map<String, Object> payload) {
+    int nextId = items.isEmpty() ? 1 : ((Integer) items.get(0).get("id")) + 1;
+    Map<String, Object> item = new HashMap<>();
+    item.put("id", nextId);
+    item.put("name", payload.get("name"));
+    item.put("value", payload.get("value"));
+    items.add(0, item);
+
+    Map<String, Object> response = new HashMap<>();
+    response.put("message", "Item created successfully");
+    response.put("data", item);
+    return response;
+  }
+
+  @PutMapping("/items/{id}")
+  public Map<String, Object> updateItem(@PathVariable Integer id, @RequestBody Map<String, Object> payload) {
+    for (Map<String, Object> item : items) {
+      if (item.get("id").equals(id)) {
+        if (payload.containsKey("name")) {
+          item.put("name", payload.get("name"));
+        }
+        if (payload.containsKey("value")) {
+          item.put("value", payload.get("value"));
+        }
+        return new HashMap<>(Map.of("message", "Item updated successfully", "data", item));
+      }
     }
 
-    @GetMapping("/health")
-    public Map<String, String> health() {
-        Map<String, String> response = new HashMap<>();
-        response.put("status", "healthy");
-        response.put("timestamp", Instant.now().toString());
-        response.put("service", "${config.projectName}-backend");
-        return response;
+    return new HashMap<>(Map.of("error", "Not found"));
+  }
+
+  @DeleteMapping("/items/{id}")
+  public Map<String, Object> deleteItem(@PathVariable Integer id) {
+    Iterator<Map<String, Object>> iterator = items.iterator();
+    while (iterator.hasNext()) {
+      Map<String, Object> item = iterator.next();
+      if (item.get("id").equals(id)) {
+        iterator.remove();
+        return new HashMap<>(Map.of("message", "Item deleted successfully", "data", item));
+      }
     }
 
-    @GetMapping("/data")
-    public Map<String, Object> getData() {
-        Map<String, Object> response = new HashMap<>();
-        response.put("message", "Hello from ${config.projectName} API!");
-        response.put("description", "${config.projectDescription}");
-        response.put("timestamp", Instant.now().toString());
-        
-        List<Map<String, Object>> data = new ArrayList<>();
-        data.add(Map.of("id", 1, "name", "Sample Item 1", "value", 42));
-        data.add(Map.of("id", 2, "name", "Sample Item 2", "value", 84));
-        response.put("data", data);
-        
-        return response;
-    }
-}`,
+    return new HashMap<>(Map.of("error", "Not found"));
+  }
+}
+`,
       'src/main/resources/application.properties': `server.port=5000
-spring.application.name=${config.projectName}`,
+spring.application.name=${config.projectName}
+`,
       'README.md': `# ${config.projectName} Backend
 
 ${config.projectDescription}
-
-## Prerequisites
-- Java 17+
-- Maven
 
 ## Run
 
@@ -386,38 +548,35 @@ ${config.projectDescription}
 \`\`\`
 
 Backend runs at http://localhost:5000
-`,
-      '.gitignore': `target/
-*.class
-.mvn/
-mvnw
-mvnw.cmd`
+`
     }
   };
 }
 
 function rails(config) {
+  const moduleName = config.projectName
+    .split('-')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join('');
+
   return {
     files: {
       'Gemfile': `source 'https://rubygems.org'
 
-ruby '3.2.0'
-
 gem 'rails', '~> 7.1.0'
 gem 'puma', '~> 6.0'
-gem 'rack-cors'`,
-      'config.ru': `require_relative 'config/environment'
-run Rails.application`,
+gem 'rack-cors'
+`,
       'config/application.rb': `require_relative 'boot'
 require 'rails'
 require 'active_model/railtie'
 require 'action_controller/railtie'
 
-module ${config.projectName.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('')}
+module ${moduleName}
   class Application < Rails::Application
     config.load_defaults 7.1
     config.api_only = true
-    
+
     config.middleware.insert_before 0, Rack::Cors do
       allow do
         origins '*'
@@ -425,14 +584,24 @@ module ${config.projectName.split('-').map(w => w.charAt(0).toUpperCase() + w.sl
       end
     end
   end
-end`,
+end
+`,
       'config/routes.rb': `Rails.application.routes.draw do
   namespace :api do
     get 'health', to: 'application#health'
-    get 'data', to: 'application#data'
+    get 'items', to: 'application#items'
+    post 'items', to: 'application#create_item'
+    put 'items/:id', to: 'application#update_item'
+    delete 'items/:id', to: 'application#delete_item'
   end
-end`,
-      'app/controllers/api/application_controller.rb': `class Api::ApplicationController < ApplicationController
+end
+`,
+      'app/controllers/api/application_controller.rb': `class Api::ApplicationController < ActionController::API
+  @@items = [
+    { id: 1, name: 'Sample Item 1', value: 42 },
+    { id: 2, name: 'Sample Item 2', value: 84 }
+  ]
+
   def health
     render json: {
       status: 'healthy',
@@ -441,18 +610,40 @@ end`,
     }
   end
 
-  def data
+  def items
     render json: {
       message: 'Hello from ${config.projectName} API!',
       description: '${config.projectDescription}',
       timestamp: Time.now.iso8601,
-      data: [
-        { id: 1, name: 'Sample Item 1', value: 42 },
-        { id: 2, name: 'Sample Item 2', value: 84 }
-      ]
+      data: @@items
     }
   end
-end`,
+
+  def create_item
+    id = @@items.empty? ? 1 : @@items.first[:id] + 1
+    item = { id: id, name: params[:name], value: params[:value] }
+    @@items.unshift(item)
+    render json: { message: 'Item created successfully', data: item }, status: :created
+  end
+
+  def update_item
+    item = @@items.find { |entry| entry[:id] == params[:id].to_i }
+    return render json: { error: 'Not found' }, status: :not_found unless item
+
+    item[:name] = params[:name] if params.key?(:name)
+    item[:value] = params[:value] if params.key?(:value)
+    render json: { message: 'Item updated successfully', data: item }
+  end
+
+  def delete_item
+    item = @@items.find { |entry| entry[:id] == params[:id].to_i }
+    return render json: { error: 'Not found' }, status: :not_found unless item
+
+    @@items.delete(item)
+    render json: { message: 'Item deleted successfully', data: item }
+  end
+end
+`,
       'README.md': `# ${config.projectName} Backend
 
 ${config.projectDescription}
@@ -470,18 +661,20 @@ rails server -p 5000
 \`\`\`
 
 Backend runs at http://localhost:5000
-`,
-      '.gitignore': `log/
-tmp/
-.bundle/`
+`
     }
   };
 }
 
 function phoenix(config) {
+  const moduleName = config.projectName
+    .split('-')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join('');
+
   return {
     files: {
-      'mix.exs': `defmodule ${config.projectName.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('')}.MixProject do
+      'mix.exs': `defmodule ${moduleName}.MixProject do
   use Mix.Project
 
   def project do
@@ -496,7 +689,7 @@ function phoenix(config) {
 
   def application do
     [
-      mod: {${config.projectName.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('')}.Application, []},
+      mod: {${moduleName}.Application, []},
       extra_applications: [:logger]
     ]
   end
@@ -508,8 +701,9 @@ function phoenix(config) {
       {:cors_plug, "~> 3.0"}
     ]
   end
-end`,
-      'lib/router.ex': `defmodule ${config.projectName.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('')}.Router do
+end
+`,
+      'lib/router.ex': `defmodule ${moduleName}.Router do
   use Phoenix.Router
 
   pipeline :api do
@@ -517,15 +711,24 @@ end`,
     plug CORSPlug
   end
 
-  scope "/api", ${config.projectName.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('')} do
+  scope "/api", ${moduleName} do
     pipe_through :api
 
     get "/health", ApiController, :health
-    get "/data", ApiController, :data
+    get "/items", ApiController, :items
+    post "/items", ApiController, :create_item
+    put "/items/:id", ApiController, :update_item
+    delete "/items/:id", ApiController, :delete_item
   end
-end`,
-      'lib/api_controller.ex': `defmodule ${config.projectName.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('')}.ApiController do
+end
+`,
+      'lib/api_controller.ex': `defmodule ${moduleName}.ApiController do
   use Phoenix.Controller
+
+  @items [
+    %{id: 1, name: "Sample Item 1", value: 42},
+    %{id: 2, name: "Sample Item 2", value: 84}
+  ]
 
   def health(conn, _params) do
     json(conn, %{
@@ -535,18 +738,28 @@ end`,
     })
   end
 
-  def data(conn, _params) do
+  def items(conn, _params) do
     json(conn, %{
       message: "Hello from ${config.projectName} API!",
       description: "${config.projectDescription}",
       timestamp: DateTime.utc_now() |> DateTime.to_iso8601(),
-      data: [
-        %{id: 1, name: "Sample Item 1", value: 42},
-        %{id: 2, name: "Sample Item 2", value: 84}
-      ]
+      data: @items
     })
   end
-end`,
+
+  def create_item(conn, params) do
+    json(conn, %{message: "Item created successfully", data: params})
+  end
+
+  def update_item(conn, params) do
+    json(conn, %{message: "Item updated successfully", data: params})
+  end
+
+  def delete_item(conn, params) do
+    json(conn, %{message: "Item deleted successfully", data: params})
+  end
+end
+`,
       'README.md': `# ${config.projectName} Backend
 
 ${config.projectDescription}
@@ -564,10 +777,7 @@ mix phx.server
 \`\`\`
 
 Backend runs at http://localhost:5000
-`,
-      '.gitignore': `_build/
-deps/
-*.ez`
+`
     }
   };
 }

@@ -2,13 +2,14 @@
 
 const { run, generate, listStacks } = require('../src/index.js');
 
-// Parse CLI arguments
 const args = process.argv.slice(2);
 
-function parseArgs(args) {
+function parseArgs(argv) {
   const parsed = { flags: {} };
-  for (let i = 0; i < args.length; i++) {
-    const arg = args[i];
+
+  for (let i = 0; i < argv.length; i += 1) {
+    const arg = argv[i];
+
     if (arg === '--help' || arg === '-h') {
       parsed.flags.help = true;
     } else if (arg === '--list-stacks') {
@@ -21,54 +22,56 @@ function parseArgs(args) {
       parsed.flags.json = true;
     } else if (arg === '--smart') {
       parsed.flags.smart = true;
-    } else if ((arg === '--name' || arg === '-n') && args[i + 1]) {
-      parsed.name = args[++i];
-    } else if ((arg === '--stack' || arg === '-s') && args[i + 1]) {
-      parsed.stack = args[++i];
-    } else if ((arg === '--description' || arg === '-d') && args[i + 1]) {
-      parsed.description = args[++i];
+    } else if (arg === '--no-docker') {
+      parsed.flags.noDocker = true;
+    } else if (arg === '--output-dir' && argv[i + 1]) {
+      parsed.outputDir = argv[++i];
+    } else if ((arg === '--name' || arg === '-n') && argv[i + 1]) {
+      parsed.name = argv[++i];
+    } else if ((arg === '--stack' || arg === '-s') && argv[i + 1]) {
+      parsed.stack = argv[++i];
+    } else if ((arg === '--description' || arg === '-d') && argv[i + 1]) {
+      parsed.description = argv[++i];
+    } else if (arg === '--folder-structure' && argv[i + 1]) {
+      parsed.folderStructure = argv[++i];
+    } else if (arg === '--features' && argv[i + 1]) {
+      parsed.features = argv[++i];
     }
   }
+
   return parsed;
 }
 
 function printHelp() {
   console.log(`
-MindCore · Forge - Hackathon project bootstrapper
+MindCore · Forge v2 - All-in-one hackathon starter
 
 USAGE:
-  forge                                    Interactive mode (prompts)
-  forge --smart                            Smart AI Interactive mode
-  forge --name <name> --stack <stack>      Non-interactive mode
+  forge                                         Interactive mode (prompts)
+  forge --smart                                 Smart AI interactive mode
+  forge --name <name> --stack <stack>           Non-interactive mode
 
 OPTIONS:
-  --smart                    Enable AI recommendations and enrichment
-  -n, --name <name>          Project name (lowercase alphanumeric with hyphens)
-  -s, --stack <stack>        Stack key (use --list-stacks to see options)
-  -d, --description <desc>   Project description (default: "A hackathon project")
-      --list-stacks          List all available stacks as JSON
-      --dry-run              Preview what would be generated without creating files
-      --skip-install         Create files but skip dependency installation
-      --json                 Output result as JSON (non-interactive mode only)
-  -h, --help                 Show this help message
+  --smart                       Enable AI recommendations and enrichment
+  -n, --name <name>             Project name (lowercase alphanumeric with hyphens)
+  -s, --stack <stack>           Stack key OR stack display name
+  -d, --description <desc>      Project description
+      --output-dir <path>        Output directory (defaults to current working directory)
+      --folder-structure <val>  separate | monorepo | nested (web stacks)
+      --features <list>         Comma-separated: auth,database,api-docs,testing,cicd,env
+      --no-docker               Disable Docker assets for web stacks
+      --list-stacks             List all available stacks as JSON
+      --dry-run                 Preview without creating files
+      --skip-install            Skip dependency installation
+      --json                    Output result as JSON (non-interactive only)
+  -h, --help                    Show this help message
 
 EXAMPLES:
-  forge                                          # Interactive mode
-  forge --name my-app --stack react-express      # React + Express project
-  forge --name api --stack fastapi               # Python FastAPI backend
-  forge --name game --stack pygame               # Pygame project
-  forge --list-stacks                            # Show all stacks
-  forge --list-stacks | jq '.web'                # Filter web stacks
-  forge --name test --stack nextjs --dry-run     # Preview without creating
-
-STACK CATEGORIES:
-  Web Full-Stack    react-express, vue-express, nextjs, angular-express, ...
-  Mobile            react-native, flutter, swift-ios, kotlin-android
-  CLI & Desktop     go-cli, python-cli, rust-cli, electron
-  Backend API       spring-boot, rails-api, phoenix
-  Data Science      jupyter, pytorch, tensorflow
-  Games             pygame, phaser
-  Infrastructure    terraform, kubernetes, docker-compose, ansible
+  forge --name my-app --stack react-express --description "Realtime app"
+  forge --name my-app --stack "React + Express" --description "Friendly name works"
+  forge --name my-api --stack spring-boot --json
+  forge --name demo --stack react-fastapi --output-dir ../ --folder-structure monorepo --features env,testing,cicd --dry-run
+  forge --list-stacks
 `);
 }
 
@@ -80,32 +83,32 @@ if (parsed.flags.help) {
 }
 
 if (parsed.flags.listStacks) {
-  const stacks = listStacks();
-  console.log(JSON.stringify(stacks, null, 2));
+  console.log(JSON.stringify(listStacks(), null, 2));
   process.exit(0);
 }
 
-// Non-interactive mode: if --name and --stack are provided
 if (parsed.name && parsed.stack) {
   generate({
     projectName: parsed.name,
     stack: parsed.stack,
     projectDescription: parsed.description || 'A hackathon project',
-    dryRun: parsed.flags.dryRun || false,
-    skipInstall: parsed.flags.skipInstall || false,
-    jsonOutput: parsed.flags.json || false,
-  }).catch((error) => {
+    dryRun: Boolean(parsed.flags.dryRun),
+    skipInstall: Boolean(parsed.flags.skipInstall),
+    jsonOutput: Boolean(parsed.flags.json),
+    folderStructure: parsed.folderStructure,
+    outputDir: parsed.outputDir,
+    includeDocker: parsed.flags.noDocker ? false : undefined,
+    features: parsed.features
+  }).catch(error => {
     console.error('Error:', error.message);
     process.exit(1);
   });
 } else if (parsed.name || parsed.stack) {
-  // Partial args — tell user what's missing
   console.error('Error: Both --name and --stack are required for non-interactive mode.');
   console.error('Run "forge --help" for usage information.');
   process.exit(1);
 } else {
-  // Interactive mode
-  run(parsed.flags).catch((error) => {
+  run(parsed.flags).catch(error => {
     console.error('Error:', error.message);
     process.exit(1);
   });

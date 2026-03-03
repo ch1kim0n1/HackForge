@@ -64,7 +64,8 @@ function App() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:${config.backend === 'fastapi' ? '8000' : '5000'}/api/data');
+      const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:${config.backend === 'fastapi' ? '8000' : '5000'}';
+      const response = await fetch(\`\${API_BASE_URL}/api/items\`);
       if (!response.ok) {
         throw new Error('Network response was not ok');
       }
@@ -362,6 +363,7 @@ createApp(App).mount('#app');`,
 
 <script>
 import axios from 'axios';
+const API_BASE_URL = process.env.VUE_APP_API_BASE_URL || 'http://localhost:${config.backend === 'fastapi' ? '8000' : '5000'}';
 
 export default {
   name: 'App',
@@ -381,7 +383,7 @@ export default {
       try {
         this.loading = true;
         this.error = null;
-        const response = await axios.get('http://localhost:${config.backend === 'fastapi' ? '8000' : '5000'}/api/data');
+        const response = await axios.get(\`\${API_BASE_URL}/api/items\`);
         this.data = response.data;
       } catch (err) {
         this.error = err.message;
@@ -717,7 +719,7 @@ button:disabled {
   background: rgba(0, 0, 0, 0.2);
   backdrop-filter: blur(10px);
 }`,
-      'public/app.js': `const API_BASE_URL = 'http://localhost:${config.backend === 'fastapi' ? '8000' : '5000'}';
+      'public/app.js': `const API_BASE_URL = window.API_BASE_URL || 'http://localhost:${config.backend === 'fastapi' ? '8000' : '5000'}';
 
 let isLoading = false;
 
@@ -732,7 +734,7 @@ async function fetchData() {
         refreshBtn.disabled = true;
         statusContainer.innerHTML = '<p class="loading">Loading...</p>';
 
-        const response = await fetch(\`\${API_BASE_URL}/api/data\`);
+        const response = await fetch(\`\${API_BASE_URL}/api/items\`);
         
         if (!response.ok) {
             throw new Error('Network response was not ok');

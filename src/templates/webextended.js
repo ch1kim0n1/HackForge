@@ -83,7 +83,8 @@ export class AppComponent implements OnInit {
     this.loading = true;
     this.error = null;
     
-    this.http.get('http://localhost:${config.backend === 'fastapi' ? '8000' : '5000'}/api/data')
+    const apiBaseUrl = (window as any).API_BASE_URL || 'http://localhost:${config.backend === 'fastapi' ? '8000' : '5000'}';
+    this.http.get(\`\${apiBaseUrl}/api/items\`)
       .subscribe({
         next: (result) => {
           this.data = result;
@@ -204,7 +205,8 @@ export default app`,
     loading = true;
     error = null;
     try {
-      const response = await fetch('http://localhost:${config.backend === 'fastapi' ? '8000' : '5000'}/api/data');
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:${config.backend === 'fastapi' ? '8000' : '5000'}';
+      const response = await fetch(\`\${API_BASE_URL}/api/items\`);
       if (!response.ok) throw new Error('Network response was not ok');
       data = await response.json();
     } catch (err) {
@@ -304,7 +306,7 @@ export default function Home() {
     setLoading(true)
     setError(null)
     try {
-      const response = await fetch('/api/data')
+      const response = await fetch('/api/items')
       if (!response.ok) throw new Error('Failed to fetch')
       const result = await response.json()
       setData(result)
@@ -348,16 +350,52 @@ export default function Home() {
 .header { padding: 2rem; text-align: center; color: white; }
 .main { padding: 2rem; }
 .card { background: white; padding: 2rem; border-radius: 12px; max-width: 800px; margin: 0 auto; }`,
-      'app/api/data/route.js': `export async function GET() {
+      'app/api/items/route.js': `let items = [
+  { id: 1, name: 'Sample Item 1', value: 42 },
+  { id: 2, name: 'Sample Item 2', value: 84 }
+]
+
+export async function GET() {
   return Response.json({
     message: 'Hello from ${config.projectName} API!',
     description: '${config.projectDescription}',
     timestamp: new Date().toISOString(),
-    data: [
-      { id: 1, name: 'Sample Item 1', value: 42 },
-      { id: 2, name: 'Sample Item 2', value: 84 }
-    ]
+    data: items
   })
+}
+
+export async function POST(request) {
+  const body = await request.json()
+  const item = {
+    id: items.length ? Math.max(...items.map(i => i.id)) + 1 : 1,
+    name: body.name,
+    value: body.value
+  }
+
+  items.unshift(item)
+  return Response.json({ message: 'Item created successfully', data: item }, { status: 201 })
+}
+
+export async function PUT(request) {
+  const body = await request.json()
+  const idx = items.findIndex(item => item.id === body.id)
+  if (idx < 0) {
+    return Response.json({ error: 'Not found' }, { status: 404 })
+  }
+
+  items[idx] = { ...items[idx], ...body }
+  return Response.json({ message: 'Item updated successfully', data: items[idx] })
+}
+
+export async function DELETE(request) {
+  const body = await request.json()
+  const idx = items.findIndex(item => item.id === body.id)
+  if (idx < 0) {
+    return Response.json({ error: 'Not found' }, { status: 404 })
+  }
+
+  const [removed] = items.splice(idx, 1)
+  return Response.json({ message: 'Item deleted successfully', data: removed })
 }`,
       'app/layout.js': `export const metadata = {
   title: '${config.projectName}',

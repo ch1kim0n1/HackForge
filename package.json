@@ -1,13 +1,14 @@
 {
   "name": "@mindcore/forge",
-  "version": "1.0.0",
-  "description": "MindCore · Forge - CLI-first, local-only, deterministic hackathon project bootstrapper",
+  "version": "2.0.0",
+  "description": "MindCore · Forge v2 - all-in-one hackathon starter",
   "main": "src/index.js",
   "bin": {
     "forge": "./bin/forge.js"
   },
   "scripts": {
     "start": "node bin/forge.js",
+    "runner": "node bin/runner.js",
     "test": "node test/test.js"
   },
   "keywords": [

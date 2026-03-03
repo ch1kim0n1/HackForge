@@ -347,14 +347,14 @@ def get_db():
 def init_db():
     """Initialize database schema"""
     with get_db() as conn:
-        conn.execute(\`\`\`
+        conn.execute("""
             CREATE TABLE IF NOT EXISTS items (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
                 value INTEGER NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
-        \`\`\`)
+        """)
         
         # Insert sample data if table is empty
         cursor = conn.execute('SELECT COUNT(*) FROM items')
