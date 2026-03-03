@@ -11,6 +11,8 @@ Runner behavior:
 - interactive template selection
 - output generated outside HackForge root (parent directory)
 - self-deletes HackForge after successful generation (only after strict path/identity checks)
+- installs JS dependencies automatically when applicable
+- prints manual setup commands for non-JS toolchains (Python/Go/Rust/Flutter)
 
 Disable self-deletion when needed:
 

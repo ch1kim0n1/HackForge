@@ -28,9 +28,11 @@ What happens:
 1. Runner asks for project name, stack, description, and options.
 2. For web stacks, runner asks folder structure, Docker, and features.
 3. Template is generated in the parent directory of HackForge.
-4. Runner prints generated project path.
-5. Runner schedules HackForge self-deletion.
-6. Self-deletion executes only when target path identity checks pass and target is exactly the `HackForge` folder.
+4. JS projects run `npm install` automatically when install is enabled.
+5. Non-JS toolchain bootstrap (Python/Go/Rust/Flutter) is scaffold-only by default and printed as manual commands.
+6. Runner prints generated project path.
+7. Runner schedules HackForge self-deletion.
+8. Self-deletion executes only when target path identity checks pass and target is exactly the `HackForge` folder.
 
 To disable self-deletion during development:
 

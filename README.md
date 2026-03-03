@@ -31,6 +31,10 @@ npm install
 ./runner.sh
 ```
 
+Dependency behavior:
+- JS projects install with `npm install` automatically when install is enabled.
+- Non-JS toolchains (Python/Go/Rust/Flutter) are scaffolded and manual commands are printed after generation.
+
 By default, runner mode deletes the HackForge folder after a successful generation.
 Deletion runs only if strict safety checks pass:
 - target path matches current repo realpath
